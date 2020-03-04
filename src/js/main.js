@@ -32,15 +32,19 @@ let inconsistentActionSequence = false;
 let inconsistentActionMessage = "";
 let triggerList = [];
 let actionList = [];
+let lastTrigger; // Last trigger inserted in workspace
+let triggerInWorkspace = []; // keep the triggers in workspace TODO: listener for remove at delete
 // Array per le azioni composte da più parti ma da mostrare come una unità
 const multipleActions = ["Alarms", "Reminders", "video", "showImage"];
 // Array per i trigger multipli
 const multipleTriggers = ["relativePosition"];
 // Array per i blocchi accessori riguardanti trigger e azioni
 const triggerSupportBlocks = ["and", "or", "group", "event", "condition", "not_dynamic"];
+const triggerOperators = ["and", "or", "group"];
+const actionOperators = ["parallel_dynamic"];
 const triggerTimeBlocks = ["day", "hour_min"];
 const actionSupportBlocks = ["parallel_dynamic", "action_placeholder"];
-
+let revertPossibility = "remove";
 
 /**
  * Modulo di inizializzazione, pattern IIFE. Carica trigger e azioni, 
@@ -48,6 +52,7 @@ const actionSupportBlocks = ["parallel_dynamic", "action_placeholder"];
  * event/condition). Contiene le dichiarazioni delle funzioni principali.
  */
 (function () {
+  "use strict";
   console.log(Init);
   //console.log(window.Blockly.Blocks.procedures_callnoreturn.renameProcedure("test", "test2"));
   localStorageChecker();
@@ -348,6 +353,42 @@ const actionSupportBlocks = ["parallel_dynamic", "action_placeholder"];
           createStandardAction(this, name, parentName, leafData);
         }
 
+      },
+      mutationToDom: function () { //registra in blockly la modifica
+        if(this.timing === "sustained") {
+        let container = document.createElement('mutation');
+        let revertPossibility = getRevertPossibility();
+        container.setAttribute('revert', revertPossibility);
+        return container;
+        }
+      },
+      domToMutation: function () { //fa effettivamente cambiare forma
+        if(this.timing === "sustained") {
+        let revertPossibility = getRevertPossibility();
+        // Updateshape è una helper function: non deve essere chiamata direttamente ma 
+        // tramite domToMutation, altrimenti non viene registrato che il numero di 
+        // inputs è stato modificato
+        if(revertPossibility) {
+          this.updateShape_(revertPossibility);
+        }
+      }
+      },
+    
+      updateShape_: function (passedValue) {
+        if(passedValue === "add") {
+          this.appendDummyInput("ACTION_REVERT")
+         //.appendField(new Blockly.FieldImage("https://giove.isti.cnr.it/demo/pat/src/img/revert.png", 25, 25, "revert"));
+        .appendField("What to do when the condition ends?")
+        .appendField(new Blockly.FieldDropdown([["Restore the previous device state","revert"], ["Do not restore","keep"]]), "revert");
+        //.appendField(new Blockly.FieldDropdown([["Restore the previous device state","revert"], ["Do not restore","keep"]]));
+        }
+        else if(passedValue==="remove"){
+          let input = this.getInput("ACTION_REVERT");
+          //block.setTooltip('The status of this device will be reverted when the condition will not be valid anymore');
+          if (input) {
+          this.removeInput("ACTION_REVERT");
+          }
+        }
       }
     };
 
@@ -614,7 +655,7 @@ const actionSupportBlocks = ["parallel_dynamic", "action_placeholder"];
    */
   function createTriggerDinamically(leafData, blockName) {
     const myLeafData = leafData;
-    Object.freeze(myLeafData);
+    //Object.freeze(myLeafData);
     Blockly.Blocks[blockName] = {
       init: function () {
         var checkbox = new Blockly.FieldCheckbox("false", function (pxchecked) {
@@ -682,25 +723,25 @@ const actionSupportBlocks = ["parallel_dynamic", "action_placeholder"];
   <category colour="0" name="Rule blocks">
     <block type="rule"></block>
   </category>
-  
+  <sep gap = "8"></sep>
   <category id="trigger_list" colour="#065699" name="Trigger list">   
     ${triggersXml}
   </category>
-
+    <sep gap = "8"></sep>
   <category name="Trigger operators" colour="210">
       <block type="and"></block>
       <block type="or"></block>
       <block type="group"></block>
   </category>
-
+  <sep gap = "8"></sep>
   <category name="Action list" colour="#069975">
     ${actionsXml}
   </category>
-    
+  <sep gap = "8"></sep>
   <category name="Action operators" colour="150">
     <block type="parallel_dynamic"></block>
   </category>
-
+  <sep gap = "8"></sep>
 </xml>
 ` ;
 
@@ -966,6 +1007,8 @@ const actionSupportBlocks = ["parallel_dynamic", "action_placeholder"];
   //workspace.addChangeListener(Listeners.triggerTypeListenerParent);
   
   //workspace.addChangeListener(Listeners.addToCorrectBlock);
+  workspace.addChangeListener(Listeners.lastTriggerListener);
+  workspace.addChangeListener(Listeners.notBlockUpdate);
   workspace.addChangeListener(Listeners.notBlockUpdate);
   workspace.addChangeListener(Listeners.triggerTypeListenerChild);
   workspace.addChangeListener(Listeners.blockDisconnectListener);
@@ -1269,23 +1312,23 @@ function getFirstTrigger() {
 function suggestorErrorMessages(errorType) {
   if (errorType === "noFirstTrigger") {
     let text = "Could not create suggestion for this block type. Suggestions will be created if the first element in the 'trigger' section of 'rule' block is a trigger.";
-    document.getElementById('textarea').innerHTML = "";
-    document.getElementById('textarea').innerHTML = text;
+    document.getElementById('textarea-2').innerHTML = "";
+    document.getElementById('textarea-2').innerHTML = text;
   }
   else if (errorType === "noRulesWithTrigger") {
     let text = "Not enough rules were found for this trigger.";
-    document.getElementById('textarea').innerHTML = "";
-    document.getElementById('textarea').innerHTML = text;
+    document.getElementById('textarea-2').innerHTML = "";
+    document.getElementById('textarea-2').innerHTML = text;
   }
   else if (errorType === "noSuggestion") {
     let text = "No suggestions were found for this trigger.";
-    document.getElementById('textarea').innerHTML = "";
-    document.getElementById('textarea').innerHTML = text;
+    document.getElementById('textarea-2').innerHTML = "";
+    document.getElementById('textarea-2').innerHTML = text;
   }
   else if (errorType === "noActionSuggestion") {
     let text = "No actions to suggest for these triggers";
-    document.getElementById('textarea').innerHTML = "";
-    document.getElementById('textarea').innerHTML = text;
+    document.getElementById('textarea-2').innerHTML = "";
+    document.getElementById('textarea-2').innerHTML = text;
   }
 }
 
@@ -1293,7 +1336,9 @@ function suggestorErrorMessages(errorType) {
  * Ottiene il primo trigger nel blocco regola, estrae dal DB le altre regole che 
  * iniziano per quel trigger, crea la lista di suggerimenti e la trasforma in blocchi
  */
+/*
 async function suggestorTrigger() {
+  "use strict";
   const firstTrigger = getFirstTrigger();
   if (!firstTrigger) {
     suggestorErrorMessages("noFirstTrigger");
@@ -1317,18 +1362,21 @@ async function suggestorTrigger() {
 
 let exportSuggestorTrigger = suggestorTrigger;
 export { exportSuggestorTrigger };
+*/
 
 /**
  * Ottiene il primo trigger nel blocco regola, estrae dal DB le altre regole che 
  * iniziano per quel trigger, crea la lista di suggerimenti e la trasforma in blocchi
  */
 async function suggestorRule() {
-  let firstTrigger = getFirstTrigger();
+  "use strict";
+  //let firstTrigger = getFirstTrigger();
+  let firstTrigger = getLastTrigger();
   if (!firstTrigger) {
     suggestorErrorMessages("noFirstTrigger");
     return;
   }
-
+  // Non prendere solo regole con first trigger, ma che contengano questo trigger
   let rulesWithFirstTrigger = await DB.getGraphsFromDB(firstTrigger).then();
   if (!rulesWithFirstTrigger || rulesWithFirstTrigger.length === 0) {
     const myCategory = getTriggerCategory(firstTrigger);
@@ -1436,6 +1484,7 @@ export { exportSuggestorCategory };
  * 
  */
 async function suggestorAction() {
+  "use strict";
   //  const allMyTriggers = getTriggerList();
   //  console.assert(allMyTriggers, "No triggers!");
   let blocksInRule = createRuleBlocksObj();
@@ -1472,6 +1521,7 @@ export { exportSuggestorAction };
  * principale
  */
 function suggestorDrop() {
+  "use strict";
   let firstWorkspace = getWorkspace();
   let secondWorkspace = getSuggestionWorkspace();
   let allSuggestedBlocks = secondWorkspace.getAllBlocks();
@@ -1544,7 +1594,7 @@ export function exportWorkspace() {
  * Helper function
  */
 export function getTriggerInfo() {
-  console.log(triggerCompleteInfo);
+  "use strict";
   return triggerCompleteInfo;
 }
 
@@ -1552,6 +1602,8 @@ export function getTriggerInfo() {
  * Helper function
  */
 export function getActionInfo() {
+  "use strict";
+  console.log(actionCompleteInfo);
   return actionCompleteInfo;
 }
 
@@ -2306,6 +2358,14 @@ function checkActionSequence() {
   return found;
 }
 
+function getTriggerOps(){
+  return triggerOperators;
+}
+
+function getActionOps(){
+  return actionOperators;
+}
+
 
 /**
  * Controlla se il trigger passato è presente nel db dei trigger
@@ -2316,6 +2376,36 @@ function checkActionSequence() {
   let found = false;
   triggerInfo.forEach(function (e) {
     if (e.fullName === trigger) {
+      found = true;
+    }
+  });
+  return found;
+}
+
+/**
+ * Controlla se il trigger operator passato è presente nel db degli op
+ * @param {*} trigger 
+ */
+function checkInTriggerOperators(triggerOp) {
+  const triggerOps = getTriggerOps();
+  let found = false;
+  triggerOps.forEach(function (e) {
+    if (e === triggerOp.type) {
+      found = true;
+    }
+  });
+  return found;
+}
+
+/**
+ * Controlla se il trigger operator passato è presente nel db degli op
+ * @param {*} trigger 
+ */
+function checkInActionOperators(actionOp) {
+  const actionOps = getActionOps();
+  let found = false;
+  actionOps.forEach(function (e) {
+    if (e === actionOp.type) {
       found = true;
     }
   });
@@ -2463,22 +2553,30 @@ function getBlocksInRule() {
  * Helper function
  */
 export function createRuleBlocksObj() {
+  "use strict";
   const blocksInRule = getBlocksInRule();
   let resultObj = {
     triggers: [],
+    triggers_op: [],
     actions: [],
+    actions_op:[],
     triggersRealName: [],
     actionsRealName: []
   };
   for (let i = 0; i < blocksInRule.length; i++) {
     if (checkInTriggerInfo(blocksInRule[i])) {
-      console.log(blocksInRule[i]);
       resultObj.triggers.push(blocksInRule[i].name);
       resultObj.triggersRealName.push(blocksInRule[i].type);
+    }
+    else if (checkInTriggerOperators(blocksInRule[i])){
+      resultObj.triggers_op.push(blocksInRule[i].type);
     }
     else if (checkInActionInfo(blocksInRule[i])) {
       resultObj.actions.push(blocksInRule[i].name);
       resultObj.actionsRealName.push(blocksInRule[i].type);
+    }
+    else if (checkInActionOperators(blocksInRule[i])){
+      resultObj.actions_op.push(blocksInRule[i].type);
     }
   }
   return resultObj;
@@ -2544,4 +2642,41 @@ export function saveUserToLocal(userName) {
  */
 export function getUserName() {
   return currentUser;
+}
+
+/**
+ * Helper function
+ */
+export function setLastTrigger(block){
+  lastTrigger = block;
+}
+
+/**
+ * Helper function
+ */
+export function getLastTrigger(){
+  return lastTrigger;
+}
+
+/**
+ * Helper function
+ */
+export function getRevertPossibility(){
+  return revertPossibility;
+}
+
+/**
+ * Helper function
+ */
+export function setRevertPossibility(val){
+  revertPossibility = val;
+}
+
+/**
+ * Helper function: clears the secondary workspace
+ */ 
+export function clearSuggestionWorkspace(){
+  let secondWorkspace = getSuggestionWorkspace();
+  let allSuggestedBlocks = secondWorkspace.getAllBlocks(false);
+  allSuggestedBlocks.forEach( e => e.dispose());
 }

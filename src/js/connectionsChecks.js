@@ -7,16 +7,17 @@ import {
   } from "./main.js";
 
 
-
   const availableConnections = {
     ACTIONS : ["action", "parallel_dynamic"],
-    TRIGGERS : ["trigger"],
+    TRIGGERS : ["trigger", "group"],
   };
 
   const availableNextStatements = {
-    trigger : ["triggerOperator", "not_dynamic"],
+    trigger : ["and", "or", "group", "not_dynamic"],
+    and : ["trigger"],
+    or : ["trigger"],
+    group : ["trigger"],
     parallel_dynamic : ["action"],
-    triggerOperator : ["trigger"],
     action_placeholder : ["action"]
   }
 
@@ -29,8 +30,9 @@ import {
  * 
  */
  function getParentInput(block, parent) {
-  var parentInput = null;
-  var inputs = parent.inputList;
+  "use strict";
+  let parentInput = null;
+  let inputs = parent.inputList;
   let parentConnection = null;
   let parentConnectionsArr = parent.getConnections_(true); 
   for (let i = 0; i < parentConnectionsArr.length; i++){
@@ -40,14 +42,15 @@ import {
     }
   }
 
-  for (var idx = 0; idx < block.inputList.length; idx++) {
+  //for (var idx = 0; idx < block.inputList.length; idx++) {
+    for (var idx = 0; idx < inputs.length; idx++) {  
     if (inputs[idx].connection === parentConnection) {
       parentInput = inputs[idx];
       break;
     }
   }
   return parentInput;
-};
+}
 
     /**
      * Returns true if the connection to parent element is legal

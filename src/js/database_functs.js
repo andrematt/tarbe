@@ -1,14 +1,29 @@
-import { getUserName, getWorkspace, getTriggerInfo, getHighlightedRule, createRuleBlocksObj, createRuleBlocksStr, getTriggerWithMyCategory } from "./main.js";
+import { getUserName, getWorkspace, getTriggerInfo, getHighlightedRule, 
+         createRuleBlocksObj, createRuleBlocksStr, getTriggerWithMyCategory 
+        } from "./main.js";
 import {generateMatrixFromRule} from "./blockSuggestor.js";
 import {getLoggedUser} from "./login.js";
+import {printPassedError} from "./compositionErrorMessages.js";
 import GLOBALS from "./ctx_sources.js";
 let lastDepth = 0;
+
+export async function activateRule(){
+  "use strict";
+  let rule = await getHighlightedRule().then();
+  if (rule) {
+    console.log(rule);
+    sendRulesToNode(rule);
+  }
+  return true;
+}
+
 
 /**
  * 
  * @param {*} matrix 
  */
 export async function updateMatrixDB(id, matrix){
+  "use strict";
   console.log("UPDATEmatrixDB", id, matrix);
   let timestamp = Date.now();
   let timestamp_str = "" + timestamp;
@@ -42,6 +57,7 @@ export async function updateMatrixDB(id, matrix){
  * @param {*} matrix 
  */
 export async function saveMatrixDB(matrix){
+
   let timestamp = Date.now();
   let timestamp_str = "" + timestamp;
   let matrix_str = matrix.toString();
@@ -72,6 +88,7 @@ export async function saveMatrixDB(matrix){
  * 
  */
 export async function retreiveMatrixDB(){
+  
   let result;
   try {
     result = await $.ajax({
@@ -142,11 +159,14 @@ async function deleteBlocks(id){
  * Salva la regola nel database regolare e in quello dei grafi
  */
 export async function saveRuleInDB() {
+  "use strict";
   let myWorkspace = getWorkspace();
   let blocksInRule = createRuleBlocksObj();
   let blocksInRuleStr = createRuleBlocksStr(blocksInRule);
   let ruleTriggersStr = blocksInRuleStr.triggers.join();
   let ruleActionsStr = blocksInRuleStr.actions.join();
+  let ruleTriggersOpStr = blocksInRuleStr.triggers_ops? blocksInRuleStr.triggers_ops.join() : "";
+  let ruleActionsOpStr = blocksInRuleStr.actions_ops? blocksInRuleStr.actions_ops.join() : "";
   let ruleTriggersRealNameStr = blocksInRuleStr.triggersRealName.join();
   let ruleActionsRealNameStr = blocksInRuleStr.actionsRealName.join();
   const id  = create_UUID();
@@ -158,7 +178,7 @@ export async function saveRuleInDB() {
   console.log(pretty_dom_xml);
   //non viene salvato il graph, manda array 
   let blocksDb = myWorkspace.blockDB_;
-  let rule_obj = makeRuleObj(blocksDb, false);
+  let rule_obj = makeRuleObj(blocksDb, false, id);
   let rule_obj_str = JSON.stringify(rule_obj);
   //let rule_xml_str = new XMLSerializer().serializeToString(rule_xml);
   let rule_graph = generateMatrixFromRule(myWorkspace);
@@ -196,14 +216,14 @@ saveBlocks(id, user_name, rule_name, rule_obj_str, pretty_dom_xml, first_trigger
  * @param {*} first_trigger 
  * @param {*} timestamp_str 
  */
-async function saveGraph(id, user_name, rule_graph_str, first_trigger, trigger_str, action_str, timestamp_str){
+async function saveGraph(id, user_name, rule_graph_str, first_trigger, trigger_str, ruleTriggersOpStr, action_str, ruleActionsOpStr, timestamp_str){
   let result;
   try {
     result = await $.ajax({
       type: "POST",
       url: GLOBALS.db_access_url,
       dataType: 'json',
-      data: { functionname: 'saveSingleGraph', arguments: [id, user_name, rule_graph_str, first_trigger, trigger_str, action_str, timestamp_str] },
+      data: { functionname: 'saveSingleGraph', arguments: [id, user_name, rule_graph_str, first_trigger, trigger_str, ruleTriggersOpStr, action_str, ruleActionsOpStr, timestamp_str] },
     });
     console.log("save graph");
     return result.result;
@@ -286,6 +306,7 @@ export async function getUserGraphs(user){
  * @param {*} triggerName 
  */
 export async function getGraphsFromDB(triggerName){
+  "use strict";
   let result;
   try {
     result = await $.ajax({
@@ -374,7 +395,8 @@ export function getAllFromDBAjax() {
  * @param {*} id 
  */
 export async function getOneFromDB(id) {
-  console.log("get one from db!!");
+  "use strict";
+  //console.log("get one from db!!");
   let result;
   try {
     result = await $.ajax({
@@ -522,8 +544,8 @@ function createTriggerArr(_rule) {
     if (_rule.blocks[block].isTrigger) {
       let trigger = {};
       //  console.log(_rule.blocks[block]);
+      trigger.triggerType = _rule.blocks[block].childBlocks_[0].type; // TODO controlla che vada sempre bene
       trigger.blockId = _rule.blocks[block].id;
-      trigger.triggerType = _rule.blocks[block].triggerType;
       trigger.dimension = _rule.blocks[block].dimension;
       trigger.dimensionId = _rule.blocks[block].dimensionId;
       trigger.nextOperator = getNextOperator(_rule.blocks[block]);      
@@ -890,7 +912,9 @@ var _tmpAction = {
  */
 function prepareTmpRule(_rule) {
   //console.log(ruleObj);
+  "use strict";
   let _tmpRule = {
+    id: _rule.id,
     author: _rule.author,
     ruleName: _rule.name,
     priority: _rule.priority,
@@ -909,7 +933,8 @@ function prepareTmpRule(_rule) {
  * @param {*} j 
  */
 function prepareTmpTrigger(_rule, j) {
-  var _tmpTrigger = {
+  "use strict";
+  let _tmpTrigger = {
     triggerType: _rule.triggers[j].triggerType,
     depth: _rule.triggers[j].depth,
     dimension: _rule.triggers[j].dimension,
@@ -933,6 +958,7 @@ function prepareTmpTrigger(_rule, j) {
 * @param {*} allTriggers
 */
 function setTriggerGroup(allTriggers) {
+  "use strict";
   let myWorkspace = getWorkspace();
   let actualGroupStart = 0;
   let actualGroupEnd = 0;
@@ -994,6 +1020,7 @@ function setTriggerGroup(allTriggers) {
  * @param {*} depth 
  */
 function setTriggerDepth(block, j, allTriggers, groupBlock, depth) {
+  "use strict";
   if (!depth) {
     depth = 0;
   }
@@ -1027,6 +1054,7 @@ function setTriggerDepth(block, j, allTriggers, groupBlock, depth) {
  * @param {*} _rule 
  */
 function getActionMode(_rule) {
+  "use strict";
   console.log(_rule);
   let ruleType = "sequential";
   for (let block in _rule.blocks) {
@@ -1064,19 +1092,22 @@ function getActionMode(_rule) {
  * @param {*} blockDb 
  * @param {*} isUpdate 
  */
-function makeRuleObj(blockDb, isUpdate) {
+function makeRuleObj(blockDb, isUpdate, id) {
+  "use strict";
   let myWorkspace = getWorkspace();
   let _rule = {};
   //ottiene tutti i blocchi dal workspace, ordinati secondo la posizione
   _rule.blocks = myWorkspace.getAllBlocks(true);
+  _rule.id = id;
   _rule.name = document.getElementById('rule_name').value;
   _rule.author = getLoggedUser(); 
   _rule.priority = document.getElementById('priority').value;
   _rule.triggers = createTriggerArr(_rule);
   _rule.actions = createActionArr(_rule);
   _rule.actionMode = getActionMode(_rule);
-  if (_rule.priority === undefined)
+  if (_rule.priority === undefined) {
     _rule.priority = 1;
+  }
   if (_rule.actionMode === undefined || _rule.actionMode === '') {
     _rule.actionMode = "sequential";
   }
@@ -1169,22 +1200,22 @@ function makeRuleObj(blockDb, isUpdate) {
   return (_tmpRule);
 }
 
-export function sendRulesToAE(ruleFromSaveAndApply) {
+export function sendRulesToNode(rule) {
+  "use strict";
+  let ruleFromSaveAndApply = JSON.parse(rule[0].rule_obj_str);
   console.log("sendRulesToAE");
   //protocols & address check
-  if (GLOBALS.adaptationEngineURL === '') {
+  if (GLOBALS.nodeUrl === '') {
       $('#adaptionError').html('<div class="ui red message">AdaptionEngine Not Found or URL is not Valid</div>');
       //alert('adaptionEngine Not Found or URL is not Valid');
+      printPassedError("no_node_adress");
       return;
   }
 
-  if (window.location.protocol === "https:" && GLOBALS.adaptationEngineURL.startsWith("http:")) {
-      $('#adaptionError').html('<div class="ui red message">Current protocol is https, but Rule Manager URL is http.<br>\n\
-          This request has been blocked because the content must be served over HTTPS, please update the the Rule Manager URL in settings section.<br>\n\
-          Protocol HTTPS - Port: 8443</div>');
+  if (window.location.protocol === "https:" && GLOBALS.nodeUrl.startsWith("http:")) {
+      printPassedError("wrong_protocol");
       return;
   }
-  //if ($("#privateRulesContainer .ruleList input[type=checkbox]").is(":checked")) {
   
   //check for rules already active
   $("#privateRulesContainer .ruleList input[type=checkbox]").each(function () {
@@ -1195,26 +1226,25 @@ export function sendRulesToAE(ruleFromSaveAndApply) {
           GLOBALS.rules[idx].apply = false;
       }
   });
-  //}
   
   //variables initialization
-  var cmUrl = GLOBALS.cmUrl;
-  var lastChar = cmUrl[cmUrl.length -1];
+  let nodeUrl = GLOBALS.nodeUrl;
+  let lastChar = nodeUrl[nodeUrl.length -1];
   if(lastChar!== '/'){
-      cmUrl+='/';
+    nodeUrl+='/';
   }
-  var ruleModelObj = {
+  let ruleModelObj = {
       "extModelRef": [
           {
               "modelId": "ctx",
-              "uri": cmUrl
+              "uri": nodeUrl
           }
       ],
       rule: []
   };
-  var ruleSelectedOrDeleted = false;
-  var tmpRule;
-  var priority = $("#priority_privateRule" + i).val();
+  let ruleSelectedOrDeleted = false;
+  let tmpRule; 
+  let priority = ruleFromSaveAndApply.priority;
   if (priority === undefined || priority === 0) {
       priority = 1;
   }
@@ -1225,8 +1255,8 @@ export function sendRulesToAE(ruleFromSaveAndApply) {
       ruleSelectedOrDeleted = true;
       tmpRule = {
           name: ruleFromSaveAndApply.ruleName, //"rule" + i,
-          id: ruleFromSaveAndApply.id, //"rule" + i,
-          originalId: ruleFromSaveAndApply.id,
+          id: rule.id, //Keep the same ID from the local database
+          originalId: rule.id, //TODO
           naturalLanguage: GLOBALS.currentNl,
           actionMode: ruleFromSaveAndApply.actionMode,
           priority: priority,
@@ -1270,7 +1300,8 @@ export function sendRulesToAE(ruleFromSaveAndApply) {
           
           //No transformed events or conditions to send to Rule Manager
           if((transformedEvents===null || typeof transformedEvents === "undefined") && (typeof transformedConditions === "undefined" || transformedConditions===null)){
-              utilityView.displayAlertMessage(getAlertMessageLocale("too_complex_rule"), "danger", true);
+              //utilityView.displayAlertMessage(getAlertMessageLocale("too_complex_rule"), "danger", true);
+              printPassedError("too_complex_rule");
               return;
           }
           
@@ -1435,7 +1466,8 @@ export function sendRulesToAE(ruleFromSaveAndApply) {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
       },
-      url: GLOBALS.adaptationEngineURL + "/rest/addRuleV2/appName/" + GLOBALS.appName + "/userName/" + encodeURIComponent(targetUserName),
+      //url: GLOBALS.nodeUrl + "/rest/addRuleV2/appName/" + GLOBALS.appName + "/userName/" + encodeURIComponent(targetUserName),
+      url: GLOBALS.nodeUrl,
       dataType: 'json',
       data: JSON.stringify(ruleModelObj),
       success: function (response)
@@ -1452,12 +1484,387 @@ export function sendRulesToAE(ruleFromSaveAndApply) {
   });
   
 }
-window.sendRulesToAE = sendRulesToAE;
+window.sendRulesToNode = sendRulesToNode;
+
+function getAppliedRules(){
+  "use strict";
+  return false;
+}
+
+function transformActions(action) {
+  if (action === undefined || action.length === 0)
+      return;
+  var actionArray = new Array();
+  for (var i = 0; i < action.length; i++) {
+      if (action[i].type === undefined || action[i].type === "custom:string") {
+          // get type from parent
+          var parentAction = getActionsByName(action[i].parent, action[i].root);
+          if (parentAction !== undefined)
+              action[i].type = parentAction.type;
+          else
+              action[i].type = action[i].root.type;
+      }
+      switch (action[i].type) {
+          case "update" :
+              var attrToUpdate = '';
+              var elemId = '';
+              var _val = '';
+              for (var j = 0; j < action[i].values.length; j++) {
+                  if (action[i].values[j].realName === 'id') {
+                      elemId = action[i].values[j].value;
+                  } else if (action[i].values[j].realName === 'cssProperty') {
+                      attrToUpdate = action[i].values[j].value;
+                  } else {
+                      if (attrToUpdate === '') {
+                          attrToUpdate = action[i].values[j].realName;
+                          if (attrToUpdate === 'display') {
+                              switch (action[i].values[j].value) {
+                                  case 'hide':
+                                      _val = 'none';
+                                      break;
+                                  case 'show':
+                                      _val = 'block';
+                                      break;
+                              }
+                          }
+                      } else {
+                          _val = action[i].values[j].value;
+                      }
+                  }
+              }
+              actionArray.push(createUpdateAction("ui:" + elemId + "/@" + attrToUpdate, _val));
+              break;
+          case "delete":
+              var elemId = '';
+              for (var j = 0; j < action[i].values; j++) {
+                  if (action[i].values[j].realName === 'id') {
+                      elemId = action[i].values[j].value;
+                      break;
+                  }
+              }
+              actionArray.push(createDeleteAction(elemId));
+              break;
+          case "create":
+              if (action[i].values !== undefined &&
+                      action[i].values.length > 0) {
+                  var elemId = '';
+                  var parentId = '';
+                  var elemType = '';
+                  var elemValue = '';
+                  for (var j = 0; j < action[i].values; j++) {
+                      if (action[i].values[j].realName === 'id') {
+                          elemId = action[i].values[j].value;
+                      } else if (action[i].values[j].realName === 'parentId') {
+                          parentId = action[i].values[j].value;
+                      } else if (action[i].values[j].realName === 'elementType') {
+                          elemType = action[i].values[j].value;
+                      } else if (action[i].values[j].realName === 'elementValue') {
+                          elemValue = action[i].values[j].value;
+                      }
+                  }
+                  actionArray.push(createCreateAction(elemId, parentId, elemType, elemValue));
+              } else {
+                  actionArray.push(createCreateAction(action[i].action.realName, action[i].parent, action[i].value, "body"));
+              }
+              break;
+          case "loadURL":
+              actionArray.push(createLoadURLAction(action[i].value));
+              break;
+          case "function" :
+              let functionName = action[i].action.realName;
+              var value = action[i].value;
+              actionArray.push(createInvokeFunction(functionName, []));
+              break;
+          case "custom:font_color":
+              //update font color for all element
+              var xPath = "//*/@font_color";
+              var colorValue = action[i].value;
+              actionArray.push(createUpdateAction(xPath, colorValue));
+              break;
+          case "custom:font_size":
+              //update font size for all element
+//                var xPath = "//*/@font_size";
+//                var fontSizeValue = action[i].value;
+//                actionArray.push(createUpdateAction(xPath, fontSizeValue));
+              actionArray.push(createInvokeFunction("increaseFontSize", []));
+              break;
+          case "custom:decrease_font_size":
+              actionArray.push(createInvokeFunction("decreaseFontSize", []));
+              break;
+          case "custom:background_color":
+              var xPath = "//*/@background_color";
+              var colorValue = action[i].value;
+              actionArray.push(createUpdateAction(xPath, colorValue));
+              break;
+          case "custom:distributionPartial":
+              break;
+          case "custom:distributionDuplicate":
+              var xPath = "//*/@distribution:" + action[i].value + ":enabled";
+              actionArray.push(createUpdateAction(xPath, "block"));
+              break;
+          case "function":
+              //invoke function
+              actionArray.push(createInvokeFunction(action[i].action.realName, []));
+              break;
+          case "composed":
+              //alarm o reminder -> controllare il nome     
+              if (action[i].action.realName === 'Alarms' ||
+                      action[i].action.realName === 'Reminders' ||
+                      action[i].action.realName === 'textToSpeech' ||
+                      action[i].action.realName === 'showText' ||
+                      action[i].action.realName === 'showImage' ||
+                      action[i].action.realName === 'video' ||
+                      action[i].action.realName === 'recordVideo' ||
+                      action[i].action.realName === 'takePicture' ||
+                      action[i].action.realName === 'showVideoTakenByPepper' ||
+                      action[i].action.realName === 'showImageTakenByPepper' ||
+                      action[i].action.realName === 'SemaphoreLight') {
+                  actionArray.push(createInvokeFunction(action[i].action.realName, action[i].values));
+              } else {
+                  var actionObj;
+                  if (action[i].action.realName === action[i].root.realName)
+                      actionObj = action[i].root;
+                  else
+                      actionObj = getActionsByName(action[i].action.realName, action[i].root);
+                  if (actionObj !== undefined) {
+                      if (actionObj.type === 'create')
+                          actionArray.push(createCreateAction(action[i].action.realName, action[i].parent, action[i].value, "body"));
+                      else if (actionObj.type === 'loadURL')
+                          actionArray.push(createLoadURLAction(action[i].values[0].value));
+                  }
+              }
+
+              break;
+          case "custom:applianceState":
+              var xPath = "applianceState/" + action[i].parent + "/" + action[i].action.realName + "/@state";
+              var stateValue = "on";
+              if (action[i].operator === "turnOff")
+                  stateValue = "off";
+              actionArray.push(createUpdateAction(xPath, stateValue));
+              break;
+          case "custom:applianceStateBlinds":
+              var xPath = "/" + action[i].parent + "/blind/@state";
+              var stateValue = action[i].operator;
+              actionArray.push(createUpdateAction(xPath, stateValue));
+              break;
+          case "update:recipe":
+          case "invokeFunctions:changeProductionLineState":
+          case "update:changeProductionLineState":                
+               var xPath = action[i].action.xPath;
+               var value = action[i].value;
+               actionArray.push(createUpdateAction(xPath, value));
+              break;
+          case "update:lightColor":
+              //update light state (on-off)                                
+              var xPath = "";
+              if (action[i].action.xPath !== undefined) {
+                  xPath = action[i].action.xPath + "/@state";
+              } else {
+                  xPath = "applianceState/" + action[i].parent + "/lightColor/@state";
+              }
+              var stateValue = "off";
+              if (action[i].operator === "turnOn") {
+                  if (action[i].action.realName === 'blinkColoredLight')
+                      stateValue = "blink";
+                  else
+                      stateValue = "on";
+                  actionArray.push(createUpdateAction(xPath, stateValue));
+                  //update light color
+                  if (action[i].action.realName !== 'blinkColoredLight') {
+                      if (action[i].action.xPath !== undefined) {
+                          xPath = action[i].action.xPath + "/@color";
+                      } else {
+                          xPath = "applianceState/" + action[i].parent + "/lightColor/@color";
+                      }
+                      var colorValue = action[i].value;
+                      actionArray.push(createUpdateAction(xPath, colorValue));
+                  }
+              } else {
+                  actionArray.push(createUpdateAction(xPath, stateValue));
+//                    if (action[i].action.xPath !== undefined) {
+//                        xPath = action[i].action.xPath + "/@color";
+//                    } else {
+//                        xPath = "applianceState/" + action[i].parent + "/lightColor/@color";
+//                    }
+//                    var colorValue = action[i].value;
+//                    actionArray.push(createUpdateAction(xPath, colorValue));
+              }
+              if (action[i].duration !== undefined && parseFloat(action[i].duration) > 0) {
+                  xPath = action[i].action.xPath + "/@duration";
+                  actionArray.push(createUpdateAction(xPath, action[i].duration));
+              }
+              break;
+          case "invokeFunctions:changeApplianceState":
+          let functionNameChangeAppState = "changeApplianceState";
+          let inputChangeAppState = createChangeApplianceStateObj(action[i]);
+          let transformedObjChangeAppState = {
+              "invokeFunction":{
+                  "name":functionNameChangeAppState,
+                  "input":inputChangeAppState 
+                  }
+              };
+              actionArray.push(transformedObjChangeAppState);
+          break;
+          
+          case "invokeFunctions:lightScene":                
+              let functionNameLightScene = "lightScene";
+              let inputLightScene = createLightSceneObj(action[i]);
+              let transformedObjLightScene = {
+                  "invokeFunction":{
+                      "name":functionNameLightScene,
+                      "input":inputLightScene
+                  }
+              };
+              actionArray.push(transformedObjLightScene);
+              //actionArray.push(createInvokeFunction(functionName, input));               
+              break;
+          case "custom:greatLuminare":     
+                  var val = action[i].operator;
+                  if (val === "turnOff"){
+                      val = "OFF";
+                  }
+                  else if(val === "turnOn"){
+                      val = "ON";
+                  }
+                  let transformedObjGreatLuminare = createGreatLuminareObj(val, action[i]);
+                  actionArray.push(transformedObjGreatLuminare);                
+          break;    
+      }
+  }
+
+  var action = {
+      actionList: {
+          action: actionArray
+      }
+  };
+  return action;
+}
+
+function createGreatLuminareObj(passedValue, passedAction){ 
+  //let path = passedAction.action.xPath +"@" + passedAction.action.realName + " externalModelId:''";
+  let path = passedAction.action.xPath +"/@state";
+  let actToObj = {
+       "update":{
+          "entityReference":{
+              "xpath": path,
+              "externalModelId": ""
+          },
+          "value":{
+              "constant":{"value":passedValue}
+          }
+      }
+  };
+  return actToObj;
+}
+
+function createLightSceneObj(passedAction) {
+  let parent = passedAction.parent;
+  let actToObj = [{
+          "name": "sceneName",
+          "value": {
+              "constant": {
+                  "value": passedAction.action.realName,
+                  "type": "STRING"
+              }
+          }
+      },
+      {
+          "name": "room",
+          "value": {
+              "constant": {
+                  "value": parent,
+                  "type": "STRING"
+              }
+          }
+      }
+  ];
+  return actToObj;
+}
+
+function createChangeApplianceStateObj(passedAction) {
+  let parent = passedAction.parent;
+  let  stateValue = "ON";
+  if (passedAction.operator === "turnOff"){
+      stateValue = "OFF";
+  }
+  let actToObj = [{
+          "name": "state",
+          "value": {
+              "constant": {
+                  //"value": passedAction.value,
+                  "value": stateValue,
+                  "type": "STRING"
+              }
+          }
+      },
+      {
+          "name": "room",
+          "value": {
+              "constant": {
+                  "value": parent,
+                  "type": "STRING"
+              }
+          }
+      }
+  ];
+  return actToObj;
+}
+
+function guid() {
+  "use strict";
+  return s4() + s4();
+}
+
+function s4() {
+  "use strict";
+  return Math.floor((1 + Math.random()) * 0x10000)
+          .toString(16)
+          .substring(1);
+}
+
+function getRealOperator(op) {
+  var operator = "";
+  switch (op) {
+      case "notEqual" :
+          operator = "NEQ";
+          break;
+      case "is not" :
+      case "equal" :
+          operator = "EQ";
+          break;
+      case "more" :
+      case "after" :
+          operator = "GT";
+          break;
+      case "less" :
+      case "before" :
+          operator = "LT";
+          break;
+      default:
+          operator = op.toUpperCase();
+  }
+  return operator;
+}
+
+function getRealType(type) {
+  var toRet = type.replace("custom:", "");
+  toRet = toRet.replace("tns:", "");
+  switch (toRet) {
+      case "int":
+      case "integer":
+      case "boolean":
+          return toRet.toUpperCase();
+      default:
+          return "STRING";
+  }
+}
+
 
 function transformOnlyOneEvent(trigger, id, operator){
+    "use strict";
       var evtId = id; //serve per le condizioni nested
       if (!evtId || evtId===null) { 
-          let timeStamp = guid();
+          let timeStamp = guid(); ///////
           evtId = evtId = trigger.element.realName + "_" + timeStamp;
       }
       var op = operator;

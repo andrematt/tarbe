@@ -16,6 +16,7 @@ import {
  * @param {*} matrix 
  */
 function increaseLinkCount(source, dest, linkArr) {
+  "use strict";
   console.log("increasing matrix from", source, "to ", dest);
   for (let i = 0; i < linkArr.length; i++) {
     if (linkArr[i].source === source && linkArr[i].dest === dest) {
@@ -48,6 +49,7 @@ function increaseLinkCount(source, dest, linkArr) {
  * @param {*} matrix 
  */
 function increaseMatrixCount(source, dest, matrix) {
+  "use strict";
   console.log("increasing matrix from", source, "to ", dest);
   let firstRow = matrix[0];
   let sourceIndex = firstRow.indexOf(source);
@@ -63,6 +65,7 @@ function increaseMatrixCount(source, dest, matrix) {
  * @param {*} currentMatrix 
  */
 function mergeMatrixes(oldMatrix, currentMatrix) {
+  "use strict";
   let newMatrix = [...oldMatrix];
   for (let i = 0; i < currentMatrix.length; i++) {
     let found = false;
@@ -87,6 +90,7 @@ function mergeMatrixes(oldMatrix, currentMatrix) {
  * @param {*} matrix 
  */
 export async function addCurrentMatrixToGlobalMatrix(matrix) {
+  "use strict";
   let result = await retreiveMatrixDB().then();
   // non è presente nel database: invio la matrix corrente
   if (!result || result.length === 0) {
@@ -95,7 +99,7 @@ export async function addCurrentMatrixToGlobalMatrix(matrix) {
   }
   // se è presente aggiungo la matrix corrente a quella già nel db
   else {
-    console.log("presente in db!")
+    console.log("presente in db!");
     let oldMatrix = result[0].rules_matrix;
     let id = result[0].id;
     let oldMatrixArr = JSON.parse(oldMatrix);
@@ -115,6 +119,7 @@ export async function addCurrentMatrixToGlobalMatrix(matrix) {
  * @param {*} xml 
  */
 function createTriggerMatrix(xml, workspace) {
+  "use strict";
   let allElements = xml.querySelectorAll("block");
   let allNames = [];
 
@@ -153,6 +158,7 @@ function createTriggerMatrix(xml, workspace) {
  * @param {*} candidateList 
  */
 function checkOnlyTerminalLeafs(candidateList) {
+  "use strict";
   let onlyEventCond = true;
   for (let i = 0; i < candidateList.length; i++) {
     // aggiungere date e time
@@ -169,6 +175,7 @@ function checkOnlyTerminalLeafs(candidateList) {
  * @param {*} suggestionList 
  */
 export function concludePath(suggestionList, initialPathList) {
+  "use strict";
   let last = suggestionList[suggestionList.length - 1];
   // isTrigger
   let triggerSupportBlocks = Main.getTriggerSupportBlocks();
@@ -194,6 +201,7 @@ export function concludePath(suggestionList, initialPathList) {
  * @param {*} suggestionList 
  */
 export function returnBestSuggestion(suggestionList) {
+  "use strict";
   console.log("not sorted list: ", suggestionList);
   let maxIndex = 0;
   let maxValue = 0;
@@ -217,6 +225,7 @@ export function returnBestSuggestion(suggestionList) {
  * @param {*} candidatesList 
  */
 function sortCandidatesList(candidatesList) {
+  "use strict";
   console.log("sorting!", candidatesList);
   candidatesList.sort(function (a, b) {
     if (a.value > b.value) {
@@ -237,6 +246,7 @@ function sortCandidatesList(candidatesList) {
  * @param {*} candidatesList 
  */
 function filterCandidatesList(candidatesList) {
+  "use strict";
   let filtered = candidatesList.filter(function (e) {
     return (e.source !== "group" && e.destination !== "group");
   });
@@ -249,6 +259,7 @@ function filterCandidatesList(candidatesList) {
  * @param {*} graphsArr 
  */
 function createMergedGraph(graphsArr) {
+  "use strict";
   let startArray = [];
   let flattedArray = [];
   for (let i = 0; i < graphsArr.length; i++) {
@@ -286,6 +297,7 @@ function createMergedGraph(graphsArr) {
  * @param {*} firstTrigger 
  */
 export function generateSuggestionsCategory(passedGraphs, firstTrigger) {
+  "use strict";
   const triggerInfo = Main.getTriggerInfo();
   const myCategory = Main.getTriggerCategory(firstTrigger, triggerInfo);
   console.log(myCategory);
@@ -315,6 +327,7 @@ export function generateSuggestionsCategory(passedGraphs, firstTrigger) {
  * @param {*} rulesMatrix 
  */
 function checkNames(rulesMatrix) {
+  "use strict";
   let newRulesMatrix = [];
   for (let i = 0; i < rulesMatrix.length; i++) {
     if (rulesMatrix[i].source === null || rulesMatrix[i].dest === null) {
@@ -371,6 +384,7 @@ function checkNames(rulesMatrix) {
  * @param {*} startingNodes 
  */
 function getBestStartingPoint(candidates, startingNodes) {
+  "use strict";
   if (startingNodes.length === 1) {
     return startingNodes[0];
   }
@@ -395,6 +409,7 @@ function getBestStartingPoint(candidates, startingNodes) {
  * @param {*} startingNodes 
  */
 function getBestStartingPointOld(candidates, startingNodes) {
+  "use strict";
   if (startingNodes.length === 1) {
     return startingNodes[0];
   }
@@ -421,6 +436,7 @@ function getBestStartingPointOld(candidates, startingNodes) {
  * @param {*} passedGraphs 
  */
 export async function generateSuggestions(passedGraphs, firstTrigger) {
+  "use strict";
   console.log(passedGraphs);
   if (typeof passedGraphs === "undefined" || passedGraphs.length === 0) {
     return;
@@ -577,6 +593,7 @@ export async function generateSuggestions(passedGraphs, firstTrigger) {
  * @param {*} terminal 
  */
 function checkConflictBetweenTerms(nonTerminal, terminal) {
+  "use strict";
   if (nonTerminal.source !== terminal.source) {
     return true;
   }
@@ -596,6 +613,7 @@ function checkConflictBetweenTerms(nonTerminal, terminal) {
  */
 function pathCreatorNested(candidates, startingNode) {
   //Adesso startingNode è un array
+  "use strict";
   let bestPath = [];
   for (let i = 0; i < candidates.length; i++) {
     let actualDist = [];
@@ -674,6 +692,7 @@ function pathCreatorNested(candidates, startingNode) {
  */
 
 function swapTerminalNonTerminal(candidatesArr) {
+  "use strict";
   if (candidatesArr.length == 2) {
     if (isEventCondition(candidatesArr[1])) {
       let swap = [...candidatesArr];
@@ -709,6 +728,7 @@ function swapTerminalNonTerminal(candidatesArr) {
 function atPreviousDistance(candidate, candidatesArr) {
   //alla prima iterazione di pathCreatorNested non abbiamo gli elementi 
   //inseriti prima
+  "use strict";
   if (!candidatesArr) {
     return true;
   }
@@ -730,6 +750,7 @@ function atPreviousDistance(candidate, candidatesArr) {
  * @param {*} candidateArr 
  */
 function foundSelfLoop(candidate, candidatesArr) {
+  "use strict";
   if (!candidatesArr) {
     return false;
   }
@@ -750,6 +771,7 @@ function foundSelfLoop(candidate, candidatesArr) {
  * @param {*} element 
  */
 function pathCreator(candidates, element, paths, path) {
+  "use strict";
   if (!element) {
     element = candidates[0];
   }
@@ -812,6 +834,7 @@ function pathCreator(candidates, element, paths, path) {
  * @param {*} candidates 
  */
 function getNextNoLeaf(candidates, path) {
+  "use strict";
   for (let i = 0; i < candidates.length; i++) {
     if (!isEventCondition(candidates[i]) && absentNonTerminalNode(candidates[i], path)) {
       return candidates[i];
@@ -826,6 +849,7 @@ function getNextNoLeaf(candidates, path) {
  * @param {*} path 
  */
 function absentNonTerminalNode(element, path) {
+  "use strict";
   let absent = true;
   for (let i = 0; i < path.length; i++) {
     if (path[i].source === element.source) {
@@ -843,6 +867,7 @@ function absentNonTerminalNode(element, path) {
  * @param {*} candidates 
  */
 function getDest(element, candidates) {
+  "use strict";
   let results = [];
   for (let i = 0; i < candidates.length; i++) {
     if (candidates[i].source === element.dest) {
@@ -859,6 +884,7 @@ function getDest(element, candidates) {
  * @param {*} candidates 
  */
 function getNoLeaf(candidates) {
+  "use strict";
   let results = [];
   for (let i = 0; i < candidates.length; i++) {
     if (!isEventCondition(candidates[i])) {
@@ -875,6 +901,7 @@ function getNoLeaf(candidates) {
  * @param {*} element 
  */
 export function isEventCondition(element) {
+  "use strict";
   if (element.dest === "event" || element.dest === "condition") {
     return true;
   }
@@ -886,6 +913,7 @@ export function isEventCondition(element) {
  * @param {*} workspace 
  */
 export function generateMatrixFromRule(workspace) {
+  "use strict";
   let rule_xml = Blockly.Xml.workspaceToDom(workspace, false);
   let triggersContainer = rule_xml.getAttribute("TRIGGERS");
   var test = rule_xml.querySelector('statement');
@@ -912,6 +940,7 @@ export function generateMatrixFromRule(workspace) {
  * @param {*} allRules 
  */
 export async function findActionSuggestion(myTriggers, allRules) {
+  "use strict";
   const rulesWithMyTrigger = extractFromAllRules(myTriggers, allRules);
   // rimuovere quelle con solito user name?
   let rulesWithSimilarity = addTriggerSimilarity(myTriggers, rulesWithMyTrigger);
@@ -960,6 +989,7 @@ export async function findActionSuggestion(myTriggers, allRules) {
  * @param {*} rules
  */
 function getTop(rules) {
+  "use strict";
   console.log(rules);
   let minPop;
   let minUserSim;
@@ -1035,6 +1065,7 @@ function getTop(rules) {
  * @param {*} rules
  */
 function addActionsSimilarity(userTable, userName, rules) {
+  "use strict";
   let rulesWithUserSim = [];
   //let similarities = pearsonSimChecker(userTable, userName);
 
@@ -1057,6 +1088,7 @@ function addActionsSimilarity(userTable, userName, rules) {
  * @param {*} top 
  */
 function shuffleBestResults(top) {
+  "use strict";
   let bests = [];
   bests.push(top[0]);
   for (let i = 1; i < top.length; i++) {
@@ -1073,6 +1105,7 @@ function shuffleBestResults(top) {
  * @param {*} max 
  */
 function getRandomInt(max) {
+  "use strict";
   return Math.floor(Math.random() * Math.floor(max));
 }
 
@@ -1084,6 +1117,7 @@ function getRandomInt(max) {
  * @param {*} rules 
  */
 async function createUserTable(rules) {
+  "use strict";
   let userTable = [];
   let actionInfo = Main.getActionInfo();
   let usersInRule = [];
@@ -1167,12 +1201,13 @@ async function pearsonSimChecker(userTable, user = "trialpetal01@kwido.com") {
 
   }
   return userTable;
-  console.log("bestCorrelation is: ", bestCorrelation)
-  console.log("with: ", bestUser);
+  //console.log("bestCorrelation is: ", bestCorrelation)
+  //console.log("with: ", bestUser);
 }
 
 function pearsonCorrelation(x, y) {
-  var shortestArrayLength = 0;
+  "use strict";
+  let shortestArrayLength = 0;
   if (x.length == y.length) {
     shortestArrayLength = x.length;
   }
@@ -1220,7 +1255,8 @@ function pearsonCorrelation(x, y) {
   return answer;
 
 
-  //alternativa.. funzionano uguale
+  //alternativa.. funzionano uguale, ma questa è più criptica
+  /*
   let sumX = 0,
     sumY = 0,
     sumXY = 0,
@@ -1237,6 +1273,7 @@ function pearsonCorrelation(x, y) {
     }
   x.forEach(reduce);
   return (minLength * sumXY - sumX * sumY) / Math.sqrt((minLength * sumX2 - sumX * sumX) * (minLength * sumY2 - sumY * sumY));
+    */
 }
 
 /**
@@ -1246,6 +1283,7 @@ function pearsonCorrelation(x, y) {
  * @param {*} top10 
  */
 function addActionsPopularity(top10) {
+  "use strict";
   let rulesWithActionPop = [];
   console.log("sorting top actions");
   // per ogni regola
@@ -1277,6 +1315,7 @@ function addActionsPopularity(top10) {
  * @param {*} allRules 
  */
 function addTriggerSimilarity(myTriggers, rules) {
+  "use strict";
   let rulesCopy = rules;
   const setA = new Set(myTriggers);
   for (let i = 0; i < rulesCopy.length; i++) {
@@ -1296,6 +1335,7 @@ function addTriggerSimilarity(myTriggers, rules) {
  * @param {*} setB 
  */
 function weightedJaccard(setA, setB) {
+  "use strict";
   let numerator = 0;
   let denominator = 0;
   const weight = 0.33;
@@ -1332,6 +1372,7 @@ function weightedJaccard(setA, setB) {
  * @param {*} setB 
  */
 function jaccard(setA, setB) {
+  "use strict";
   // intersezione (overlap) dei due insiemi
   const intersection = new Set(
     [...setA].filter(e => setB.has(e))
@@ -1358,6 +1399,7 @@ function jaccard(setA, setB) {
  * @param {*} allRules 
  */
 function extractFromAllRules(workspaceTriggers, allRules) {
+  "use strict";
   /*
   let filtered = allRules.filter(function(e){
     let triggersStr = e.trigger_list;

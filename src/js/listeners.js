@@ -3,7 +3,8 @@ import {
   getBlockType, enable_after, disable_after, setTriggerList, getActionList,
   setActionList, getRuleBlock, hasTriggerChild, getOperatorWithoutNextConn,
   checkIfTriggerOperator, getTriggerWithNoNextConnection, checkIfAction,
-  getNextViableBlockForAction, hasActionChild
+  getNextViableBlockForAction, hasActionChild, setLastTrigger, getLastTrigger,
+  exportSuggestorRule, clearSuggestionWorkspace,setRevertPossibility
 } from "./main.js";
 
 import { setActionRevert, removeActionRevert } from "./dom_modifiers.js";
@@ -13,21 +14,41 @@ import { printError, cleanError } from "./compositionErrorMessages.js";
 
 
 /**
- * 
+ * Listener for the last inserted trigger in the workspace
  */
-export function autoCheckRule(event) {
-  if (event.type) {
-    console.log("<EVENT TYPE_ ", event.type);
+export function lastTriggerListener(event){
+  "use strict";
+  if (event.type && event.type === 'create') {
     let workspace = getWorkspace();
     let block = workspace.blockDB_[event.blockId];
     if (block) {
-      console.log(block);
+      if(block.isTrigger || block.isTriggerArray){
+        let lastTrigger = getLastTrigger();
+        if(lastTrigger !== block.type) {
+          setLastTrigger(block.type);
+          clearSuggestionWorkspace();
+          exportSuggestorRule();
+        }
+      }
+    }
+  }
+}
+ 
+/**
+ * Listener to perform connection check on the blocks and eventually print an
+ * error message
+ */
+export function autoCheckRule(event) {
+  "use strict";
+  if (event.type) {
+    let workspace = getWorkspace();
+    let block = workspace.blockDB_[event.blockId];
+    if (block) {
       if (block.parentBlock_ && block.previousConnection && block.parentBlock_) {
-        console.log("MY PARENT: ", block.parentBlock_.type);
         let connOk = checkConnection(block, block.parentBlock_);
         if (!connOk) {
-          block.previousConnection.disconnect();
           printError(block, block.parentBlock_);
+          block.previousConnection.disconnect();
         }
         else {
           cleanError();
@@ -43,6 +64,7 @@ export function autoCheckRule(event) {
  * @param {*} event 
  */
 export function addToCorrectBlock(event) {
+  "use strict";
   let workspace = getWorkspace();
   if (event.type && event.type === 'create') {
     let block = workspace.blockDB_[event.blockId];
@@ -146,6 +168,7 @@ export function addToCorrectBlock(event) {
  */
 
 export function triggerTypeListenerParent(event) {
+  "use strict";
   let workspace = getWorkspace();
   if (event.type) {
     let block = workspace.blockDB_[event.blockId];
@@ -165,6 +188,7 @@ export function triggerTypeListenerParent(event) {
  * @param {*} event 
  */
 export function triggerTypeListenerChild(event) {
+  "use strict";
   let workspace = getWorkspace();
   if (event.type) {
     let block = workspace.blockDB_[event.blockId];
@@ -212,6 +236,7 @@ export function triggerTypeListenerChild(event) {
  * @param {*} event 
  */
 export function ruleTypeListener(event) {
+  "use strict";
   let workspace = getWorkspace();
   if ((event.type === "create" || event.type === "delete")) {
     let blockCount = 0;
@@ -239,10 +264,12 @@ export function ruleTypeListener(event) {
     // Non ci interessano gli altri casi: facciamo qualcosa solo se ci sono
     // azioni "reversibili" 
     if (conditionCount > 0 && eventCount === 0 && actionCount > 0) {
+      setRevertPossibility("add");
       setActionRevert();
     }
     //else if (eventCount > 0 && actionCount > 0) {
     else {
+      setRevertPossibility("remove");
       removeActionRevert();
     }
   }
@@ -254,6 +281,7 @@ export function ruleTypeListener(event) {
  * @param {*} event 
  */
 export function dateTimeCreationListener(event) {
+  "use strict";
   let workspace = getWorkspace();
   let rule_xml = Blockly.Xml.workspaceToDom(workspace, true);
   let rule_string = JSON.stringify(rule_xml);
@@ -311,6 +339,7 @@ export function dateTimeCreationListener(event) {
  * @param {*} event 
  */
 export function parallelBranchesUpdateNumber(event) {
+  "use strict";
   if (event.type === "change") {
     let workspace = getWorkspace();
     let relatedBlock = workspace.getBlockById(event.blockId);
@@ -352,6 +381,7 @@ export function parallelBranchesUpdateNumber(event) {
  * @param {*} event 
  */
 export function notBlockUpdate(event) {
+  "use strict";
   if (event.type === "change") {
     let workspace = getWorkspace();
     let relatedBlock = workspace.getBlockById(event.blockId);
@@ -389,6 +419,7 @@ export function notBlockUpdate(event) {
  * @param {*} event 
  */
 export function updateCodeListener(event) {
+  "use strict";
   let workspace = getWorkspace();
   var code = Blockly.JavaScript.workspaceToCode(workspace);
   //document.getElementById('code_textarea').value =code;
@@ -402,6 +433,7 @@ export function updateCodeListener(event) {
  * @param {*} event 
  */
 export function waitToParallelListener(event) {
+  "use strict";
   let workspace = getWorkspace();
   let movedBlock = workspace.getBlockById(event.blockId);
   if (movedBlock && movedBlock.type === "after_dynamic") {
@@ -423,6 +455,7 @@ export function waitToParallelListener(event) {
  * @param {*} branches_number 
  */
 function manageDynamicCheckbox(block, branches_number) {
+  "use strict";
   for (let i = 0; i < branches_number; i++) {
     var checkbox = new Blockly.FieldCheckbox("false");
     let stdIndex = i + 1;
@@ -439,6 +472,7 @@ function manageDynamicCheckbox(block, branches_number) {
  * @param {*} event 
  */
 export function blockDocsListener(event) {
+  "use strict";
   let workspace = getWorkspace();
   if (event.type === "ui" || event.type === "move") {
     let blockId = event.blockId;
@@ -462,6 +496,7 @@ export function blockDocsListener(event) {
  * @param {*} event 
  */
 export function triggerListener(event) {
+  "use strict";
   let workspace = getWorkspace();
   let rule_xml = Blockly.Xml.workspaceToDom(workspace, true);
   let rule_string = JSON.stringify(rule_xml);
@@ -487,6 +522,7 @@ export function triggerListener(event) {
  * @param {*} event 
  */
 export function blockDisconnectListener(event) {
+  "use strict";
   if (event.type === "move") {
     let triggerList = getTriggerList();
     let alreadyInArr = triggerList.findIndex(e => e.id === event.blockId);

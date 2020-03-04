@@ -91,7 +91,7 @@ Blockly.Blocks['and'] = {
 			"previousStatement": null,
 			"nextStatement": null
 		});
-		this.blockType = "triggerOperator";
+		this.blockType = "and";
 	}
 }
 
@@ -106,7 +106,7 @@ Blockly.Blocks['or'] = {
 			"previousStatement": null,
 			"nextStatement": null
 		});
-		this.blockType = "triggerOperator";
+		this.blockType = "or";
 	}
 }
 
@@ -128,7 +128,7 @@ Blockly.Blocks['group'] = {
 			"nextStatement": null,
 			//"style": "logic_blocks"
 		});
-		this.blockType = "triggerOperator";
+		this.blockType = "group";
 	}
 };
 

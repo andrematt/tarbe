@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 
+<!-- muovi i suggerimenti sotto? -->
+
 <html>
 <!--
 <head base href="https://giove.isti.cnr.it/demo/pat/" target="_blank"></head>
@@ -35,6 +37,9 @@
 
             <div id="logged-button-section">
               <span id="user-name"></span>
+              <button id="suggestor-drop" class="pure-button" type="button">
+                Move hint to main
+              </button>
               <button id="button-modal-export" class="pure-button" type="button">
                   Export XML
                 </button>
@@ -59,37 +64,39 @@
         </div>
 
       </div>
-
-      <div class="support-container">
-        <div class="textarea-div">
-          <div id="textarea"></div>
-        </div>
-        <div class="textarea-div">
-          <div id="textarea-2"></div>
-        </div>
-        <div class="suggestion-buttons-div">
-
-          <div id="suggestion-menu" class="pure-menu pure-menu-horizontal">
-            <ul class="pure-menu-list">
-              <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
-                <a href="#" id="menuLink1" class="pure-menu-link">Suggestions</a>
-                <ul class="pure-menu-children">
-                  <li id="suggestor-rule" class="pure-menu-item"><a href="#" class="pure-menu-link">Rule</a></li>
-                  <li id="suggestor-drop" class="pure-menu-item"><a href="#" class="pure-menu-link">Drop to Main</a></li>
-                  <li id="suggestor-info" class="pure-menu-item"><a href="#" class="pure-menu-link">Info</a></li>
-                </ul>
-              </li>
-            </ul>
-          </div>
-
-        </div>
-
-      </div>
     </div>
 
     <div class="workspaces-container">
       <div id="main-workspace-div"></div>
       <div id="suggestion-workspace-div"></div>
+    </div>
+
+    <div class="support-container">
+      <div class="textarea-div">
+        <div id="textarea"> </div>
+      </div>
+      <div class="textarea-div">
+        <div id="textarea-2"></div>
+      </div>
+      
+      <!--
+      <div class="suggestion-buttons-div">
+
+        <div id="suggestion-menu" class="pure-menu pure-menu-horizontal">
+          <ul class="pure-menu-list">
+            <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
+              <a href="#" id="menuLink1" class="pure-menu-link">Suggestions</a>
+              <ul class="pure-menu-children">
+                <li id="suggestor-rule" class="pure-menu-item"><a href="#" class="pure-menu-link">Rule</a></li>
+                <li id="suggestor-drop" class="pure-menu-item"><a href="#" class="pure-menu-link">Drop to Main</a></li>
+                <li id="suggestor-info" class="pure-menu-item"><a href="#" class="pure-menu-link">Info</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    -->
     </div>
 
 
@@ -173,6 +180,7 @@
             <button class="pure-button" data-micromodal-close aria-label="Close this dialog window">Close</button>
             <button id="button-delete" class="pure-button" data-micromodal-close aria-label="Delete this rule">Delete
               rule</button>
+              <button id="button-activate" class="pure-button" data-micromodal-close aria-label="Activate this rule">Activate rule</button>
           </footer>
         </div>
       </div>
@@ -271,7 +279,7 @@
     import * as Login from '/src/js/login.js';
     
     import { saveUserToLocal, checkRule, exportSuggestorRule, exportSuggestorDrop, getWorkspace, exportWorkspace } from '/src/js/main.js';
-    import { saveRuleInDB, getAllFromDB, getOneFromDB, sendRulesToAE, deleteRule } from '/src/js/database_functs.js';
+    import { saveRuleInDB, getAllFromDB, getOneFromDB, deleteRule, activateRule } from '/src/js/database_functs.js';
     import { generateMatrixFromRule, addCurrentMatrixToGlobalMatrix } from '/src/js/blockSuggestor.js';
     import { appendRulesList, getFullRule } from '/src/js/dom_modifiers.js';
     MicroModal.init();
@@ -333,14 +341,14 @@
     const buttonUsername = document.getElementById("button-username");
     buttonUsername.addEventListener("click", saveToLocalWrapper, false);
 
-    const suggestorRule = document.getElementById("suggestor-rule");
-    suggestorRule.addEventListener("click", exportSuggestorRule, false);
+    //const suggestorRule = document.getElementById("suggestor-rule");
+    //suggestorRule.addEventListener("click", exportSuggestorRule, false);
 
     const suggestorDrop = document.getElementById("suggestor-drop");
     suggestorDrop.addEventListener("click", exportSuggestorDrop, false);
 
-    const suggestorInfo = document.getElementById("suggestor-info");
-    suggestorInfo.addEventListener("click", showModalSuggestorInfoWrapper, false);
+    //const suggestorInfo = document.getElementById("suggestor-info");
+    //suggestorInfo.addEventListener("click", showModalSuggestorInfoWrapper, false);
 
     const buttonSave = document.getElementById("button-modal-save");
     buttonSave.addEventListener("click", saveRuleWrapper, false);
@@ -362,6 +370,9 @@
 
     const buttonDelete = document.getElementById("button-delete");
     buttonDelete.addEventListener("click", deleteRule, false);
+
+    const buttonActivate = document.getElementById("button-activate");
+    buttonActivate.addEventListener("click", activateRule, false);
 
     /*
     // API call for Google login
